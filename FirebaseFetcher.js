@@ -1,20 +1,27 @@
 // FirebaseFetcher.js
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { View } from 'react-native';
+import { getDocs, collection } from 'firebase/firestore';
 import db from './firebaseConfig';
 
-export const FirebaseFetcher = ({ onDataFetched }) => {
-  
 
+export const FirebaseFetcher = ({ onDataFetched }) => {
   useEffect(() => {
     const fetchData = async () => {
-      const data = await db.Collection('students').get();
-      const studentData = data.docs.map(doc => doc.data());
-      setGradebook(studentData);
-      onDataFetched(studentData); // Pass the data back to the parent component
+      try {
+        const studentCollectionRef = collection(db, 'students');
+        const querySnapshot = await getDocs(studentCollectionRef);
+        const studentData = [];
+        querySnapshot.forEach((doc) => {
+          studentData.push(doc.data());
+        });
+        onDataFetched(studentData);
+      } catch (error) {
+        console.error('Error fetching data: ', error);
+      }
     };
     fetchData();
-  }, []);
+  }, [onDataFetched]);
 
   return (
     <View>
@@ -22,4 +29,5 @@ export const FirebaseFetcher = ({ onDataFetched }) => {
     </View>
   );
 };
+
 export default FirebaseFetcher;

@@ -7,15 +7,15 @@ import  FirebaseFetcher  from './FirebaseFetcher';
 //import 'firebase/firestore';
 import db from './firebaseConfig';
 import { getDocs, collection, addDoc } from 'firebase/firestore';
-import { useRoute } from '@react-navigation/native';
 
 
 
 
 export default function App() {
   const Stack = createStackNavigator();
+  const [gradebookData, setGradebookData] = useState([]);
 //const db = firebase.firestore();
-
+useEffect(() => {
 const initialGradebook = [
 { studentName: 'Anitha', grade: 'A', absences: 4, bonusPoints: 0 },
 { studentName: 'Swapna', grade: 'B', absences: 2, bonusPoints: 0 },
@@ -31,37 +31,28 @@ const initialGradebook = [
 { studentName: 'Liam', grade: 'B', absences: 3, bonusPoints: 0 },
 ];
 
-//  const [initialDataAdded, setInitialDataAdded] = 
-  const [gradebookData, setGradebookData] = React.useState(false);
-  
-  useEffect(() => {
-   
-    const addInitialData = async () => {
-      const studentCollectionRef = collection(db, 'students');
+  const addInitialData = async () => {
+    const studentCollectionRef = collection(db, 'students');
+    const querySnapshot = await getDocs(studentCollectionRef);
 
-      
-      const querySnapshot = await getDocs(studentCollectionRef);
-      if (querySnapshot.size === 0) {
-        
-        initialGradebook.forEach(async student => {
-          try {
-            const docRef = await addDoc(studentCollectionRef, student);
-            console.log(`Document added with ID: ${docRef.id}`);
-          } catch (error) {
-            console.error('Error adding document: ', error);
-          }
-        });
-      } else {
-        console.log('Initial data already added.');
-      }
-    };
-
-    if (!gradebookData) {
-      addInitialData();
-      setGradebookData(true);
-      
+    if (querySnapshot.size === 0) {
+      initialGradebook.forEach(async (student) => {
+        try {
+          const docRef = await addDoc(studentCollectionRef, student);
+          console.log(`Document added with ID: ${docRef.id}`);
+        } catch (error) {
+          console.error('Error adding document: ', error);
+        }
+      });
+    } else {
+      console.log('Initial data already added.');
     }
-  }, [gradebookData]);
+  };
+
+  addInitialData();
+}, []);
+
+//         <Stack.Screen name="Gradebook" component={GradebookScreen} gradebook={gradebookData} options={{ title: 'Gradebook' }}  />
   
   return (
     <NavigationContainer>
@@ -70,7 +61,8 @@ const initialGradebook = [
 
       <Stack.Navigator initialRouteName="Title">
         <Stack.Screen name="Title" component={TitleScreen} options={{ title: 'Course Page' }} />
-        <Stack.Screen name="Gradebook" component={GradebookScreen} gradebook={gradebookData} options={{ title: 'Gradebook' }}  />
+        <Stack.Screen name="Gradebook" component={GradebookScreen} initialParams={{ gradebook: gradebookData }} options={{ title: 'Gradebook' }} />
+
         <Stack.Screen name="StudentProfile" component={StudentProfileScreen} options={{ title: 'Student Profile' }} />
       </Stack.Navigator>
      
@@ -106,22 +98,30 @@ function TitleScreen({ navigation }) {
   );
 }
 
-function GradebookScreen({ navigation }) {
+function GradebookScreen({ navigation ,route}) {
+  const { gradebook } = route.params;
+  const [updatedGradebook, setUpdatedGradebook] = useState(gradebook);
+
+  console.log('grade book reached');
+  //console.log(gradebook);
+  console.log(gradebook);
+  //console.log(gradebookData);
   
   
 
 
   const handleAwardBonusPoint = (studentIndex) => {
-    const updatedGradebook = [...gradebook];
-    updatedGradebook[studentIndex].bonusPoints += 1;
-    setGradebookData(updatedGradebook);
+    const updatedData = [...gradebook];
+    updatedData[studentIndex].bonusPoints += 1;
+    setUpdatedGradebook(updatedData);
+
     
   };
 
   return (
     <View style={styles.container}>
       <FlatList
-        data={gradebook}
+        data={updatedGradebook}
         keyExtractor={(item) => item.studentName}
         renderItem={({ item, index }) => (
           <TouchableOpacity onPress={() => navigation.navigate('StudentProfile', { student: item })}>
