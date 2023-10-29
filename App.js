@@ -1,37 +1,83 @@
 import { StatusBar } from 'expo-status-bar';
-import React from 'react';
+import React ,{ useEffect ,useState}from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
+import  FirebaseFetcher  from './FirebaseFetcher'; 
+//import 'firebase/firestore';
+import db from './firebaseConfig';
+import { getDocs, collection, addDoc } from 'firebase/firestore';
+import { useRoute } from '@react-navigation/native';
 
-const Stack = createStackNavigator();
 
-// Sample gradebook data with bonusPoints property
-const initialGradebook = [
-  { studentName: 'Anitha', grade: 'A', absences: 4, bonusPoints: 0 },
-  { studentName: 'Swapna', grade: 'B', absences: 2, bonusPoints: 0 },
-  { studentName: 'Radha', grade: 'A', absences: 3, bonusPoints: 0 },
-  { studentName: 'Harshini', grade: 'B', absences: 1, bonusPoints: 0 },
-  { studentName: 'Divya', grade: 'A', absences: 3, bonusPoints: 0 },
-  { studentName: 'John', grade: 'B', absences: 2, bonusPoints: 0 },
-  { studentName: 'Alice', grade: 'C', absences: 5, bonusPoints: 0 },
-  { studentName: 'Michael', grade: 'A', absences: 0, bonusPoints: 0 },
-  { studentName: 'Emma', grade: 'B', absences: 2, bonusPoints: 0 },
-  { studentName: 'Daniel', grade: 'C', absences: 4, bonusPoints: 0 },
-  { studentName: 'Olivia', grade: 'A', absences: 1, bonusPoints: 0 },
-  { studentName: 'Liam', grade: 'B', absences: 3, bonusPoints: 0 },
-];
 
 
 export default function App() {
+  const Stack = createStackNavigator();
+//const db = firebase.firestore();
+
+const initialGradebook = [
+{ studentName: 'Anitha', grade: 'A', absences: 4, bonusPoints: 0 },
+{ studentName: 'Swapna', grade: 'B', absences: 2, bonusPoints: 0 },
+{ studentName: 'Radha', grade: 'A', absences: 3, bonusPoints: 0 },
+{ studentName: 'Harshini', grade: 'B', absences: 1, bonusPoints: 0 },
+{ studentName: 'Divya', grade: 'A', absences: 3, bonusPoints: 0 },
+{ studentName: 'John', grade: 'B', absences: 2, bonusPoints: 0 },
+{ studentName: 'Alice', grade: 'C', absences: 5, bonusPoints: 0 },
+{ studentName: 'Michael', grade: 'A', absences: 0, bonusPoints: 0 },
+{ studentName: 'Emma', grade: 'B', absences: 2, bonusPoints: 0 },
+{ studentName: 'Daniel', grade: 'C', absences: 4, bonusPoints: 0 },
+{ studentName: 'Olivia', grade: 'A', absences: 1, bonusPoints: 0 },
+{ studentName: 'Liam', grade: 'B', absences: 3, bonusPoints: 0 },
+];
+
+//  const [initialDataAdded, setInitialDataAdded] = 
+  const [gradebookData, setGradebookData] = React.useState(false);
+  
+  useEffect(() => {
+   
+    const addInitialData = async () => {
+      const studentCollectionRef = collection(db, 'students');
+
+      
+      const querySnapshot = await getDocs(studentCollectionRef);
+      if (querySnapshot.size === 0) {
+        
+        initialGradebook.forEach(async student => {
+          try {
+            const docRef = await addDoc(studentCollectionRef, student);
+            console.log(`Document added with ID: ${docRef.id}`);
+          } catch (error) {
+            console.error('Error adding document: ', error);
+          }
+        });
+      } else {
+        console.log('Initial data already added.');
+      }
+    };
+
+    if (!gradebookData) {
+      addInitialData();
+      setGradebookData(true);
+      
+    }
+  }, [gradebookData]);
+  
   return (
     <NavigationContainer>
+      
+      <FirebaseFetcher onDataFetched={setGradebookData}/>
+
       <Stack.Navigator initialRouteName="Title">
         <Stack.Screen name="Title" component={TitleScreen} options={{ title: 'Course Page' }} />
-        <Stack.Screen name="Gradebook" component={GradebookScreen} options={{ title: 'Gradebook' }} />
+        <Stack.Screen name="Gradebook" component={GradebookScreen} gradebook={gradebookData} options={{ title: 'Gradebook' }}  />
         <Stack.Screen name="StudentProfile" component={StudentProfileScreen} options={{ title: 'Student Profile' }} />
       </Stack.Navigator>
+     
+      <StatusBar style="auto" />
+      
     </NavigationContainer>
+
   );
 }
 
@@ -61,12 +107,15 @@ function TitleScreen({ navigation }) {
 }
 
 function GradebookScreen({ navigation }) {
-  const [gradebook, setGradebook] = React.useState(initialGradebook);
+  
+  
+
 
   const handleAwardBonusPoint = (studentIndex) => {
     const updatedGradebook = [...gradebook];
     updatedGradebook[studentIndex].bonusPoints += 1;
-    setGradebook(updatedGradebook);
+    setGradebookData(updatedGradebook);
+    
   };
 
   return (
